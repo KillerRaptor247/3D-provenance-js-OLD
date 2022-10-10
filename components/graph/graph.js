@@ -33,7 +33,7 @@ const GraphComponent = ({ graphRef }) => {
 
         setInitCoords({ x, y, z });
         setInitRotation(graphRef.current.camera().quaternion);
-    }, []);
+    }, [window]);
 
     // Create function to pass to the ProvVis library for when a node is selected in the graph.
     // For our purposes, were simply going to jump to the selected node.

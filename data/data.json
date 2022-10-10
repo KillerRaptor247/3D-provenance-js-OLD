@@ -1,0 +1,23 @@
+{
+  "nodes": [
+    {"id": "1", "name": "Service 1"},
+    {"id": "2", "name": "Service 2"},
+    {"id": "3", "name": "Service 3"},
+    {"id": "4", "name": "Service 4"},
+    {"id": "5", "name": "Service 5"},
+    {"id": "6", "name": "Service 6"},
+    {"id": "7", "name": "Service 7"},
+    {"id": "8", "name": "Service 8"},
+    {"id": "9", "name": "Service 9"},
+    {"id": "10", "name": "Service 10"}
+  ],
+  "links": [
+    { "source": "1", "target": "2"},
+    { "source": "1", "target": "3"},
+    { "source": "1", "target": "4"},
+    { "source": "1", "target": "5"},
+    { "source": "6", "target": "7"},
+    { "source": "8", "target": "9"},
+    { "source": "9", "target": "10"}
+  ]
+}

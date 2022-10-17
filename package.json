@@ -9,8 +9,10 @@
         "lint": "next lint"
     },
     "dependencies": {
-        "@visdesignlab/trrack": "^2.0.0-alpha.10",
         "3d-force-graph": "^1.70.13",
+        "@trrack/core": "^0.0.6",
+        "@visdesignlab/trrack": "^2.0.0-alpha.10",
+        "@visdesignlab/trrack-vis": "^2.0.0-alpha.12",
         "d3": "^7.6.1",
         "file-saver": "^2.0.5",
         "jotai": "^1.8.2",

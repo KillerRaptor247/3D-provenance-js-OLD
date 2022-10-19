@@ -1,21 +1,28 @@
 import { initProvenance, createAction } from "@visdesignlab/trrack";
-import React, {useState, useCallback, useEffect, useMemo, useRef} from "react";
+import React, {
+    useState,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+} from "react";
 import ForceGraph3D, { ForceGraphMethods } from "react-force-graph-3d";
 import { useAtom, atom } from "jotai";
-import {ProvVisCreator} from "@visdesignlab/trrack-vis"
+import { ProvVisCreator } from "@visdesignlab/trrack-vis";
 //import {initializeTrrack, Registry } from "@trrack/core";
 
 import myData from "../../data/data.json";
 
 /*
-* TODO: Fix Target Container is not a DOM Element on line 59
-* */
+ * TODO: Fix Target Container is not a DOM Element on line 59
+ * */
 
 // Graph Generation
-const GraphComponent = ({graphRef}) => {
-
+const GraphComponent = ({ graphRef }) => {
     const [selectedNode, setSelectedNode] = useState();
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+    const [prov, setProv] = useState();
+    const [provState, setProvState] = useState({ node: null });
 
     const AtomNotInitialized = new Error("This atom has not been initialized");
     let initCoordsAtom = atom({ x: null, y: null, z: null });
@@ -26,15 +33,7 @@ const GraphComponent = ({graphRef}) => {
 
     const nodes = myData.nodes.map((node) => node.id);
 
-    let state = {
-        node: selectedNode,
-    }
-
     const provRef = useRef(null);
-
-    const prov = initProvenance(state, {loadFromUrl: false});
-    prov.addObserver((state) => state.node, selectAction);
-    prov.done();
 
     useEffect(() => {
         setDimensions({
@@ -46,18 +45,24 @@ const GraphComponent = ({graphRef}) => {
 
         setInitCoords({ x, y, z });
         setInitRotation(graphRef.current.camera().quaternion);
-    }, [graphRef, setInitCoords, setInitRotation]);
+
+        // Setup ProvVis once initially
+        prov = initProvenance(provState, { loadFromUrl: false });
+        prov.addObserver((provState) => provState.node, selectAction);
+        prov.done();
+        setProv(prov);
+        ProvVisCreator(provRef.current, prov);
+    }, []);
 
     const selectAction = createAction((state) => {
-        state.node = selectedNode;
-        console.log(`${state.node} Selected`);
-        console.log(JSON.stringify(state.node));
+        setProvState((provState) => ({ ...provState, node: selectedNode }));
+        console.log(`${provState.node} Selected`);
+        console.log(JSON.stringify(provState.node));
         console.log(JSON.stringify(selectedNode));
         //selectAction.setLabel(`${state.node} Selected`);
         //prov.apply(selectAction(selectedNode));
         //setSelectedNode(state.node);
     }).setLabel("Select");
-
 
     const handleNodeClick = useCallback(
         (node) => {
@@ -89,13 +94,11 @@ const GraphComponent = ({graphRef}) => {
         [graphRef, prov, selectAction]
     );
 
-
     // Create function to pass to the ProvVis library for when a node is selected in the graph.
     // For our purposes, were simply going to jump to the selected node.
     /*const visCallback = (newNode) => {
         prov.goToNode(newNode);
     };*/
-
 
     // Normally this would work if there was an index.html file but we don't have that
     // How would I reference this provDiv I am using in home-page.js?
@@ -113,29 +116,27 @@ const GraphComponent = ({graphRef}) => {
 
     const Graph = (
         <>
-            <div ref={provRef} id="root"></div>
-        <ForceGraph3D
-            graphData={myData}
-            nodeLabel="name"
-            ref={graphRef}
-            // select the node on left click
-            onNodeClick={handleNodeClick}
-            onNodeRightClick={(node, e) => {
-                setSelectedNode(node);
-                console.log(node);
-            }}
-            backgroundColor={"rgba(0,0,0,0)"}
-        ></ForceGraph3D>
-
+            <div
+                ref={provRef}
+                id="root"
+                className="absolute z-50 top-0 right-0"
+            ></div>
+            <ForceGraph3D
+                graphData={myData}
+                nodeLabel="name"
+                ref={graphRef}
+                // select the node on left click
+                onNodeClick={handleNodeClick}
+                onNodeRightClick={(node, e) => {
+                    setSelectedNode(node);
+                    console.log(node);
+                }}
+                backgroundColor={"rgba(0,0,0,0)"}
+            ></ForceGraph3D>
         </>
-
     );
 
-    // Setup ProvVis once initially
-    ProvVisCreator(provRef.current, prov);
-
-    return (Graph);
-
+    return Graph;
 };
 
 export default GraphComponent;

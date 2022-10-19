@@ -30,33 +30,11 @@ const GraphComponent = ({graphRef}) => {
         node: selectedNode,
     }
 
+    const provRef = useRef(null);
+
     const prov = initProvenance(state, {loadFromUrl: false});
     prov.addObserver((state) => state.node, selectAction);
     prov.done();
-
-    // Create function to pass to the ProvVis library for when a node is selected in the graph.
-    // For our purposes, were simply going to jump to the selected node.
-    const visCallback = (newNode) => {
-        prov.goToNode(newNode);
-    };
-
-
-    // Normally this would work if there was an index.html file but we don't have that
-    // How would I reference this provDiv I am using in home-page.js?
-    // This function below is a void function that creates a visual tree based on the provenance
-    // The first argument should take an Element object. I want to reference an Element in a different
-    // file: home-page.js in a div that I have given the id=provDiv
-    // If this helps here is how it would normally be called it my old typescript project where it was being referenced correctly:
-    // ProvVisCreator(document.getElementById('provDiv')!, prov, visCallback);
-    // and this would be the div being referenced in the index.html of that project
-    //   <div id="parent">
-    //     <svg width="0" height="0"><div id="graph"></div></svg>
-    //     <div id="provDiv"></div>
-    //   </div>
-    // I want to implement the equivalence of this using React but I'm just referencing things incorrectly
-
-    // Setup ProvVis once initially
-    ProvVisCreator(document.getElementById('provDiv'), prov, visCallback);
 
     useEffect(() => {
         setDimensions({
@@ -68,9 +46,7 @@ const GraphComponent = ({graphRef}) => {
 
         setInitCoords({ x, y, z });
         setInitRotation(graphRef.current.camera().quaternion);
-    }, [window]);
-
-
+    }, [graphRef, setInitCoords, setInitRotation]);
 
     const selectAction = createAction((state) => {
         state.node = selectedNode;
@@ -81,6 +57,7 @@ const GraphComponent = ({graphRef}) => {
         //prov.apply(selectAction(selectedNode));
         //setSelectedNode(state.node);
     }).setLabel("Select");
+
 
     const handleNodeClick = useCallback(
         (node) => {
@@ -109,10 +86,34 @@ const GraphComponent = ({graphRef}) => {
                 document.dispatchEvent(event);
             }
         },
-        [graphRef]
+        [graphRef, prov, selectAction]
     );
 
+
+    // Create function to pass to the ProvVis library for when a node is selected in the graph.
+    // For our purposes, were simply going to jump to the selected node.
+    /*const visCallback = (newNode) => {
+        prov.goToNode(newNode);
+    };*/
+
+
+    // Normally this would work if there was an index.html file but we don't have that
+    // How would I reference this provDiv I am using in home-page.js?
+    // This function below is a void function that creates a visual tree based on the provenance
+    // The first argument should take an Element object. I want to reference an Element in a different
+    // file: home-page.js in a div that I have given the id=provDiv
+    // If this helps here is how it would normally be called it my old typescript project where it was being referenced correctly:
+    // ProvVisCreator(document.getElementById('provDiv')!, prov, visCallback);
+    // and this would be the div being referenced in the index.html of that project
+    //   <div id="parent">
+    //     <svg width="0" height="0"><div id="graph"></div></svg>
+    //     <div id="provDiv"></div>
+    //   </div>
+    // I want to implement the equivalence of this using React but I'm just referencing things incorrectly
+
     const Graph = (
+        <>
+            <div ref={provRef} id="root"></div>
         <ForceGraph3D
             graphData={myData}
             nodeLabel="name"
@@ -125,8 +126,16 @@ const GraphComponent = ({graphRef}) => {
             }}
             backgroundColor={"rgba(0,0,0,0)"}
         ></ForceGraph3D>
+
+        </>
+
     );
+
+    // Setup ProvVis once initially
+    ProvVisCreator(provRef.current, prov);
+
     return (Graph);
+
 };
 
 export default GraphComponent;

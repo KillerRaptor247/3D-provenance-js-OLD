@@ -1,36 +1,13 @@
-/*import {initializeTrrack, Registry} from "@trrack/core";
-import {useMemo} from "react";
+import { initProvenance, createAction } from "@visdesignlab/trrack";
+import { atom } from "jotai";
+import React, {useState} from "react"
 
-const {registry, actions} = useMemo(() => {
-    const reg = Registry.create();
 
-    const selectNode = reg.register('Select-Node', (selectedNode, node) => {
-        console.log("Node Selected");
-        console.log(node);
-        setSelectedNode(node);
-    })
 
-    return{
-        registry: reg,
-        actions: {
-            selectNode,
-        }
-    }
-}, []);
+// Create function to pass to the ProvVis library for when a node is selected in the graph.
+// For our purposes, were simply going to jump to the selected node.
+/*export const visCallback = (newNode) => {
+    prov.goToNode(newNode);
+};*/
 
-const trrack = useMemo(() => {
-    const t = initializeTrrack({
-        selectedNode,
-        registry,
-    });
-
-    t.currentChange(() => {
-        setSelectedNode(t.current.state.val);
-    });
-
-    return t;
-}, [registry]);
-
-const current = useMemo(() => {
-    return trrack.current;
-}, [trrack]);*/
+//export const prov = initProvenance(provState, { loadFromUrl: false });

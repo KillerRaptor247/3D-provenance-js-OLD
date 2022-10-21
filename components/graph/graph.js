@@ -1,41 +1,79 @@
-import { initProvenance, createAction } from "@visdesignlab/trrack";
 import React, {
     useState,
     useCallback,
     useEffect,
-    useMemo,
     useRef,
 } from "react";
-import ForceGraph3D, { ForceGraphMethods } from "react-force-graph-3d";
-import { useAtom, atom } from "jotai";
+import { createAction} from "@visdesignlab/trrack";
+import ForceGraph3D from "react-force-graph-3d";
+import { useAtom } from "jotai";
+import {
+    initRotationAtom,
+    initCoordsAtom,
+    graphDataAtom,
+    provenanceAtom,
+    provStateAtom,
+    provVisAtom,
+} from "../../utils/atoms";
 import { ProvVisCreator } from "@visdesignlab/trrack-vis";
 //import {initializeTrrack, Registry } from "@trrack/core";
 
 import myData from "../../data/data.json";
 
 /*
- * TODO: Fix Target Container is not a DOM Element on line 59
+ * TODO: Implement undo and redo functionality for provVis buttons
  * */
 
 // Graph Generation
 const GraphComponent = ({ graphRef }) => {
+
     const [selectedNode, setSelectedNode] = useState();
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-    const [prov, setProv] = useState();
-    const [provState, setProvState] = useState({ node: null });
-
-    const AtomNotInitialized = new Error("This atom has not been initialized");
-    let initCoordsAtom = atom({ x: null, y: null, z: null });
-    let initRotationAtom = atom(AtomNotInitialized);
+    const [provenance, setProvenance] = useAtom(provenanceAtom);
+    const [provState, setProvState] = useAtom(provStateAtom);
 
     const [initCoords, setInitCoords] = useAtom(initCoordsAtom);
     const [initRotation, setInitRotation] = useAtom(initRotationAtom);
+    const provRef = useRef(provVisAtom);
 
-    const nodes = myData.nodes.map((node) => node.id);
 
-    const provRef = useRef(null);
+
+    const [graphData] = useAtom(graphDataAtom);
+    //const nodes = myData.nodes.map((node) => node.id);
+
+
+
+    useEffect( () => {
+        console.log("Prov Vis has been initialized");
+        ProvVisCreator(provRef.current, provenance, (nodeID) => {
+            console.log("Hey! Prov Node changed");
+            console.log("The current provenance state node")
+            console.log(provenance.state.node);
+            setProvState(provenance.state.node);
+            provenance.goToNode(nodeID)});
+    }, []);
+
+    useEffect( () => {
+        if(provenance.state.node != null){
+            const distance = 100;
+            const distRatio =
+                1 + distance / Math.hypot(provenance.state.node.x, provenance.state.node.y, provenance.state.node.z);
+            graphRef.current.cameraPosition(
+                {
+                    x: provenance.state.node.x * distRatio,
+                    y: provenance.state.node.y * distRatio,
+                    z: provenance.state.node.z * distRatio
+                },
+                provenance.state.node,
+                1500
+            );
+
+        }
+    }, [provenance.state.node])
 
     useEffect(() => {
+        console.log("Setting initial Camera");
+
         setDimensions({
             width: window.innerWidth,
             height: window.innerHeight,
@@ -46,30 +84,34 @@ const GraphComponent = ({ graphRef }) => {
         setInitCoords({ x, y, z });
         setInitRotation(graphRef.current.camera().quaternion);
 
-        // Setup ProvVis once initially
-        prov = initProvenance(provState, { loadFromUrl: false });
-        prov.addObserver((provState) => provState.node, selectAction);
-        prov.done();
-        setProv(prov);
-        ProvVisCreator(provRef.current, prov);
+
     }, []);
 
-    const selectAction = createAction((state) => {
-        setProvState((provState) => ({ ...provState, node: selectedNode }));
-        console.log(`${provState.node} Selected`);
-        console.log(JSON.stringify(provState.node));
-        console.log(JSON.stringify(selectedNode));
-        //selectAction.setLabel(`${state.node} Selected`);
-        //prov.apply(selectAction(selectedNode));
-        //setSelectedNode(state.node);
-    }).setLabel("Select");
+    const selectCall = useCallback(
+        (selectedNode) => {
+            console.log("Inside Select Callback");
+            const selectAction = createAction( (state) => {
+                    console.log("Inside selectAction");
+                    state.node = selectedNode;
+                    console.log(state.node);
+                },
+            ).setLabel(`${selectedNode.name}` + " Selected");
+            console.log("Here's the provenance state");
+            console.log(provenance.state);
+            provenance.apply(selectAction());
+            setProvState( {node: selectedNode});
+        } ,
+        [provState]
+    );
 
+
+
+    // Graph handle node click event using useCallback function
     const handleNodeClick = useCallback(
         (node) => {
             if (node != null) {
-                setSelectedNode(node);
-                prov.apply(selectAction(node));
-                console.log(JSON.stringify(node));
+                console.log("Handling Click Event");
+                selectCall(node);
                 const distance = 100;
                 const distRatio =
                     1 + distance / Math.hypot(node.x, node.y, node.z);
@@ -84,42 +126,22 @@ const GraphComponent = ({ graphRef }) => {
                         1500
                     );
                 }
-
-                const event = new CustomEvent("nodeClick", {
-                    detail: { node: node },
-                });
-                document.dispatchEvent(event);
             }
+
         },
-        [graphRef, prov, selectAction]
+        [graphRef, provState]
     );
 
-    // Create function to pass to the ProvVis library for when a node is selected in the graph.
-    // For our purposes, were simply going to jump to the selected node.
-    /*const visCallback = (newNode) => {
-        prov.goToNode(newNode);
-    };*/
+    useEffect(() => {
 
-    // Normally this would work if there was an index.html file but we don't have that
-    // How would I reference this provDiv I am using in home-page.js?
-    // This function below is a void function that creates a visual tree based on the provenance
-    // The first argument should take an Element object. I want to reference an Element in a different
-    // file: home-page.js in a div that I have given the id=provDiv
-    // If this helps here is how it would normally be called it my old typescript project where it was being referenced correctly:
-    // ProvVisCreator(document.getElementById('provDiv')!, prov, visCallback);
-    // and this would be the div being referenced in the index.html of that project
-    //   <div id="parent">
-    //     <svg width="0" height="0"><div id="graph"></div></svg>
-    //     <div id="provDiv"></div>
-    //   </div>
-    // I want to implement the equivalence of this using React but I'm just referencing things incorrectly
+    }, []);
+
 
     const Graph = (
         <>
             <div
                 ref={provRef}
-                id="root"
-                className="absolute z-50 top-0 right-0"
+                className="absolute z-50 top-0 right-0 text-white"
             ></div>
             <ForceGraph3D
                 graphData={myData}
@@ -131,7 +153,7 @@ const GraphComponent = ({ graphRef }) => {
                     setSelectedNode(node);
                     console.log(node);
                 }}
-                backgroundColor={"rgba(0,0,0,0)"}
+                backgroundColor={"rgba(128,128,128,.5)"}
             ></ForceGraph3D>
         </>
     );

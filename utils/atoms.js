@@ -19,7 +19,7 @@ const AtomNotInitialized = new Error("This atom has not been initialized");
 
 //export const [provState, setProvState] = useState({node: null});
 
-const nodeAtom = atom({node: null});
+const nodeAtom = atom({addNode: null ,selectNode: null});
 export const provStateAtom =
     atom((get) => get(nodeAtom),
         (get, set, newNode) => {
@@ -27,8 +27,6 @@ export const provStateAtom =
         }
     );
 const prov = initProvenance(provStateAtom, { loadFromUrl:false });
-prov.addObserver((provStateAtom) => provStateAtom, () => {console.log("The provStateAtom has been changed")});
-prov.done();
 
 export const provVisAtom = atom(null);
 export const graphDataAtom = atom(data);
